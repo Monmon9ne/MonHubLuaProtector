@@ -5,56 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mon Lua Protector - RAW Creator</title>
 <style>
-body {
-    background:#0a0a0a;
-    color:#00eaff;
-    font-family: monospace;
-    padding:20px;
-    margin:0;
-}
-h1 {
-    font-size: 1.5em;
-    margin-bottom: 10px;
-    text-align:center;
-}
-input, textarea, button {
-    font-family: monospace;
-    font-size: 1em;
-    margin-top: 10px;
-    color:#00eaff;
-}
-input, textarea {
-    background:#111;
-    border:1px solid #00eaff;
-    padding:10px;
-    width:100%;
-    box-sizing: border-box;
-}
-textarea {
-    height:150px;
-    resize:none;
-}
-button {
-    background:#00eaff;
-    color:#000;
-    border:none;
-    padding:10px;
-    cursor:pointer;
-    font-weight:bold;
-    width:100%;
-    box-sizing: border-box;
-}
-.output-container {
-    margin-top:10px;
-}
-.output-container input, .output-container button {
-    margin-top:5px;
-}
-@media (min-width: 600px){
-    textarea { height:250px; }
-    button { width:auto; margin-right:5px; }
-    .output-container input { width:auto; display:inline-block; }
-}
+body { background:#0a0a0a; color:#00eaff; font-family: monospace; padding:20px; margin:0;}
+h1 { font-size:1.5em; text-align:center; margin-bottom:10px; }
+input, textarea, button { font-family: monospace; font-size:1em; margin-top:10px; color:#00eaff; }
+input, textarea { background:#111; border:1px solid #00eaff; padding:10px; width:100%; box-sizing:border-box; }
+textarea { height:150px; resize:none; }
+button { background:#00eaff; color:#000; border:none; padding:10px; cursor:pointer; font-weight:bold; width:100%; box-sizing:border-box; }
+.output-container { margin-top:10px; }
+.output-container input, .output-container button { margin-top:5px; }
+@media (min-width:600px){ textarea { height:250px; } button{ width:auto; margin-right:5px; } .output-container input{ width:auto; display:inline-block; } }
 </style>
 </head>
 <body>
@@ -67,13 +26,13 @@ button {
 <button id="createBtn">Create RAW</button>
 
 <div class="output-container">
-    <input id="rawLink" readonly placeholder="RAW link">
-    <button onclick="copy('rawLink')">Copy Link</button>
+<input id="rawLink" readonly placeholder="RAW link">
+<button onclick="copy('rawLink')">Copy Link</button>
 </div>
 
 <div class="output-container">
-    <input id="loadstringLink" readonly placeholder="Loadstring">
-    <button onclick="copy('loadstringLink')">Copy Loadstring</button>
+<input id="loadstringLink" readonly placeholder="Loadstring">
+<button onclick="copy('loadstringLink')">Copy Loadstring</button>
 </div>
 
 <script>
@@ -93,17 +52,21 @@ document.getElementById("createBtn").addEventListener("click", async()=>{
     const password = document.getElementById("passwordInput").value.trim();
     if(!code || !password) return alert("Missing code or password");
 
-    const res = await fetch('/api/create-raw',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({code,password})
-    });
+    try {
+        const res = await fetch('/api/create-raw', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({code,password})
+        });
+        const data = await res.json();
+        if(data.error) return alert(data.error);
 
-    const data = await res.json();
-    if(data.error) return alert(data.error);
-
-    document.getElementById("rawLink").value = data.link;
-    document.getElementById("loadstringLink").value = data.loadstring;
+        document.getElementById("rawLink").value = data.link;
+        document.getElementById("loadstringLink").value = data.loadstring;
+    } catch(e){
+        alert("Failed to create RAW. Check server logs.");
+        console.error(e);
+    }
 });
 
 function copy(id){
