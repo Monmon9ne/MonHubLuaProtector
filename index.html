@@ -2,11 +2,59 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mon Lua Protector - RAW Creator</title>
 <style>
-body { background: #0a0a0a; color: #00eaff; font-family: monospace; padding: 20px;}
-input, textarea { width:100%; padding:10px; margin-top:10px; background:#111; border:1px solid #00eaff; color:#00eaff;}
-button { background:#00eaff; color:#000; border:none; padding:10px 20px; margin-top:10px; cursor:pointer; font-weight:bold;}
+body {
+    background:#0a0a0a;
+    color:#00eaff;
+    font-family: monospace;
+    padding:20px;
+    margin:0;
+}
+h1 {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+    text-align:center;
+}
+input, textarea, button {
+    font-family: monospace;
+    font-size: 1em;
+    margin-top: 10px;
+    color:#00eaff;
+}
+input, textarea {
+    background:#111;
+    border:1px solid #00eaff;
+    padding:10px;
+    width:100%;
+    box-sizing: border-box;
+}
+textarea {
+    height:150px;
+    resize:none;
+}
+button {
+    background:#00eaff;
+    color:#000;
+    border:none;
+    padding:10px;
+    cursor:pointer;
+    font-weight:bold;
+    width:100%;
+    box-sizing: border-box;
+}
+.output-container {
+    margin-top:10px;
+}
+.output-container input, .output-container button {
+    margin-top:5px;
+}
+@media (min-width: 600px){
+    textarea { height:250px; }
+    button { width:auto; margin-right:5px; }
+    .output-container input { width:auto; display:inline-block; }
+}
 </style>
 </head>
 <body>
@@ -16,30 +64,39 @@ button { background:#00eaff; color:#000; border:none; padding:10px 20px; margin-
 <input type="file" id="fileInput">
 <textarea id="codeInput" placeholder="Paste Lua code here..."></textarea>
 <input type="password" id="passwordInput" placeholder="Enter password">
-<button onclick="createRAW()">Create RAW</button>
+<button id="createBtn">Create RAW</button>
 
-<h3>Output</h3>
-<input id="rawLink" readonly>
-<button onclick="copy('rawLink')">Copy Link</button>
+<div class="output-container">
+    <input id="rawLink" readonly placeholder="RAW link">
+    <button onclick="copy('rawLink')">Copy Link</button>
+</div>
 
-<input id="loadstringLink" readonly>
-<button onclick="copy('loadstringLink')">Copy Loadstring</button>
+<div class="output-container">
+    <input id="loadstringLink" readonly placeholder="Loadstring">
+    <button onclick="copy('loadstringLink')">Copy Loadstring</button>
+</div>
 
 <script>
-document.getElementById("fileInput").addEventListener("change", async (e) => {
+const fileInput = document.getElementById("fileInput");
+const codeInput = document.getElementById("codeInput");
+
+fileInput.addEventListener("change", async(e)=>{
     const file = e.target.files[0];
-    if(file) document.getElementById("codeInput").value = await file.text();
+    if(file){
+        const text = await file.text();
+        codeInput.value = text;
+    }
 });
 
-async function createRAW() {
-    const code = document.getElementById("codeInput").value.trim();
+document.getElementById("createBtn").addEventListener("click", async()=>{
+    const code = codeInput.value.trim();
     const password = document.getElementById("passwordInput").value.trim();
     if(!code || !password) return alert("Missing code or password");
 
-    const res = await fetch('/api/create-raw', {
+    const res = await fetch('/api/create-raw',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({code, password})
+        body: JSON.stringify({code,password})
     });
 
     const data = await res.json();
@@ -47,9 +104,9 @@ async function createRAW() {
 
     document.getElementById("rawLink").value = data.link;
     document.getElementById("loadstringLink").value = data.loadstring;
-}
+});
 
-function copy(id) {
+function copy(id){
     const x = document.getElementById(id);
     x.select();
     navigator.clipboard.writeText(x.value);
