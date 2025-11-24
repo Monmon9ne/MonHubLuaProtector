@@ -4,38 +4,10 @@
 <meta charset="UTF-8">
 <title>Mon Lua Protector - RAW</title>
 <style>
-    body {
-        background: #0a0a0a;
-        color: #00eaff;
-        font-family: Consolas, monospace;
-        text-align: center;
-        padding: 20px;
-    }
-    input {
-        background: #111;
-        border: 1px solid #00eaff;
-        padding: 10px;
-        width: 300px;
-        color: #00eaff;
-        margin-top: 10px;
-    }
-    button {
-        background: #00eaff;
-        border: none;
-        padding: 10px 20px;
-        color: #000;
-        cursor: pointer;
-        font-weight: bold;
-        margin-top: 10px;
-    }
-    #codeBox {
-        white-space: pre-wrap;
-        background: #111;
-        padding: 20px;
-        margin-top: 20px;
-        border: 1px solid #00eaff;
-        display: none;
-    }
+body { background: #0a0a0a; color: #00eaff; font-family: monospace; text-align:center; padding:20px;}
+input { background:#111; border:1px solid #00eaff; padding:10px; width:300px; color:#00eaff; margin-top:10px;}
+button { background:#00eaff; border:none; padding:10px 20px; color:#000; cursor:pointer; font-weight:bold; margin-top:10px;}
+#codeBox { white-space: pre-wrap; background:#111; padding:20px; margin-top:20px; border:1px solid #00eaff; display:none;}
 </style>
 </head>
 <body>
@@ -49,38 +21,25 @@
 <div id="codeBox"></div>
 
 <script>
-function decrypt(enc, pass) {
-    try {
-        let decoded = decodeURIComponent(escape(atob(enc)));
-        let parts = decoded.split("::");
-        if (parts[1] === pass) return parts[0];
-    } catch {
-        return null;
-    }
-    return null;
-}
-
 async function unlock() {
     const pass = document.getElementById("pass").value;
     const url = new URL(location.href);
     const id = url.searchParams.get("id");
 
-    // load DB (from localStorage hoặc từ raw-db.json trên GitHub)
-    let db = localStorage.getItem("mon_raw_db");
+    const db = await fetch('/raw-db.json').then(r => r.json());
+    const raw = db.raws.find(r => r.id===id);
+    if(!raw) return alert("RAW not found");
 
-    if (!db) db = await fetch("raw-db.json").then(r => r.json());
-    else db = JSON.parse(db);
+    try {
+        const decoded = atob(raw.encrypted);
+        const parts = decoded.split("::");
+        if(parts[1]!==pass) return alert("Wrong password");
 
-    let raw = db.raws.find(r => r.id === id);
-
-    if (!raw) return alert("RAW not found");
-
-    let code = decrypt(raw.encrypted, pass);
-
-    if (!code) return alert("Wrong password");
-
-    document.getElementById("codeBox").style.display = "block";
-    document.getElementById("codeBox").textContent = code;
+        document.getElementById("codeBox").style.display='block';
+        document.getElementById("codeBox").textContent = parts[0];
+    } catch(e) {
+        alert("Failed to decrypt");
+    }
 }
 </script>
 
