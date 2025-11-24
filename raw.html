@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Raw Viewer</title>
+<style>
+body { background: #0a0a0a; font-family: Consolas, monospace; color: #00eaff; padding: 20px; }
+h1 { text-shadow: 0 0 5px #00eaff; }
+textarea, input { width: 100%; padding: 10px; background: #000; color: #00eaff; border: 1px solid #00eaff; border-radius: 8px; margin-top: 8px; font-family: Consolas, monospace; }
+button { margin-top: 12px; width: 100%; padding: 12px; background: #00eaff; border: none; border-radius: 8px; color: #000; font-weight: bold; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>THIS FILE WAS PROTECT WITH MON LUA PROTECTOR</h1>
+<p>IF YOU ARE THE OWNER PLEASE TYPE THE FILE PASSWORDS</p>
+
+<input type="text" id="passwordBox" placeholder="Enter password">
+<button onclick="viewRaw()">View RAW</button>
+
+<pre id="codeBox" style="display:none; margin-top:15px;"></pre>
+
+<script>
+const rawDBUrl = "./raw-db.json"; // Nếu dùng GitHub, thay thành raw link GitHub
+function getParam(name) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+}
+
+async function viewRaw() {
+    const pwd = document.getElementById("passwordBox").value;
+    if (!pwd) return alert("Password required!");
+    const id = getParam("id");
+    if (!id) return alert("RAW ID required in URL (?id=RAWID)");
+
+    let db;
+    try {
+        const res = await fetch(rawDBUrl);
+        db = await res.json();
+    } catch(e) {
+        alert("Cannot load RAW DB");
+        return;
+    }
+
+    if (!db[id]) return alert("RAW not found");
+    if (db[id].password !== pwd) return alert("Wrong password!");
+
+    const codeBox = document.getElementById("codeBox");
+    codeBox.textContent = db[id].code;
+    codeBox.style.display = "block";
+}
+</script>
+</body>
+</html>
