@@ -1,10 +1,14 @@
 {
   "version": 2,
+  "name": "MonHubLuaProtector",
   "builds": [
-    { "src": "*.html", "use": "@vercel/static" },
-    { "src": "*.json", "use": "@vercel/static" }
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "raw.html", "use": "@vercel/static" },
+    { "src": "raw-db.json", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "/$1" }
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/raw.html", "dest": "/raw.html" },
+    { "src": "/raw-db.json", "dest": "/raw-db.json" }
   ]
 }
