@@ -34,8 +34,10 @@ let currentRaw = null;
 
 // Load DB
 async function loadDB(){
-    const db = await fetch('/raw-db.json').then(r=>r.json());
-    return db;
+    const res = await fetch('/raw-db.json');
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch(e){ console.error('Invalid JSON', text); return { raws: [] }; }
 }
 
 // Unlock RAW
@@ -80,11 +82,16 @@ async function saveCode(){
             headers:{'Content-Type':'application/json'},
             body: JSON.stringify({id: currentRaw.id, password:pass, code:newCode})
         });
-        const data = await res.json();
+
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); }
+        catch(err){ console.error('Server returned non-JSON', text); return alert('Server error'); }
+
         if(data.error) return alert(data.error);
         alert("Saved successfully");
     } catch(e){
-        alert("Failed to save RAW. Check server logs.");
+        alert("Failed to save RAW. Check console.");
         console.error(e);
     }
 }
