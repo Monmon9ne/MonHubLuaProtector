@@ -4,29 +4,9 @@
 <meta charset="UTF-8">
 <title>Mon Lua Protector - RAW Creator</title>
 <style>
-    body {
-        background: #0a0a0a;
-        color: #00eaff;
-        font-family: Consolas, monospace;
-        padding: 20px;
-    }
-    input, textarea {
-        width: 100%;
-        background: #111;
-        border: 1px solid #00eaff;
-        padding: 10px;
-        color: #00eaff;
-        margin-top: 10px;
-    }
-    button {
-        background: #00eaff;
-        border: none;
-        padding: 10px 20px;
-        color: #000;
-        cursor: pointer;
-        font-weight: bold;
-        margin-top: 10px;
-    }
+body { background: #0a0a0a; color: #00eaff; font-family: monospace; padding: 20px;}
+input, textarea { width:100%; padding:10px; margin-top:10px; background:#111; border:1px solid #00eaff; color:#00eaff;}
+button { background:#00eaff; color:#000; border:none; padding:10px 20px; margin-top:10px; cursor:pointer; font-weight:bold;}
 </style>
 </head>
 <body>
@@ -36,7 +16,6 @@
 <input type="file" id="fileInput">
 <textarea id="codeInput" placeholder="Paste Lua code here..."></textarea>
 <input type="password" id="passwordInput" placeholder="Enter password">
-
 <button onclick="createRAW()">Create RAW</button>
 
 <h3>Output</h3>
@@ -47,54 +26,31 @@
 <button onclick="copy('loadstringLink')">Copy Loadstring</button>
 
 <script>
-async function loadFile(file) {
-    return await file.text();
-}
-
 document.getElementById("fileInput").addEventListener("change", async (e) => {
-    let file = e.target.files[0];
-    if (file) {
-        document.getElementById("codeInput").value = await loadFile(file);
-    }
+    const file = e.target.files[0];
+    if(file) document.getElementById("codeInput").value = await file.text();
 });
-
-function encrypt(text, password) {
-    return btoa(unescape(encodeURIComponent(text + "::" + password)));
-}
 
 async function createRAW() {
     const code = document.getElementById("codeInput").value.trim();
-    const pass = document.getElementById("passwordInput").value.trim();
+    const password = document.getElementById("passwordInput").value.trim();
+    if(!code || !password) return alert("Missing code or password");
 
-    if (!code || !pass) return alert("Missing code or password");
-
-    const encrypted = encrypt(code, pass);
-
-    // load local DB
-    let db = await fetch("raw-db.json").then(r => r.json()).catch(() => ({ raws: [] }));
-
-    let id = "raw_" + Date.now();
-
-    db.raws.push({
-        id: id,
-        encrypted: encrypted
+    const res = await fetch('/api/create-raw', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({code, password})
     });
 
-    // save to localStorage (vì GitHub không cho ghi file)
-    localStorage.setItem("mon_raw_db", JSON.stringify(db));
+    const data = await res.json();
+    if(data.error) return alert(data.error);
 
-    let link = location.origin + "/raw-creator/raw.html?id=" + id;
-
-    document.getElementById("rawLink").value = link;
-
-    document.getElementById("loadstringLink").value =
-        `loadstring(game:HttpGet("${link}"))()`;
-
-    alert("RAW created. Push local JSON to GitHub manually.");
+    document.getElementById("rawLink").value = data.link;
+    document.getElementById("loadstringLink").value = data.loadstring;
 }
 
 function copy(id) {
-    let x = document.getElementById(id);
+    const x = document.getElementById(id);
     x.select();
     navigator.clipboard.writeText(x.value);
 }
