@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mon Lua Protector - RAW Creator</title>
 <style>
-body { background:#0a0a0a; color:#00eaff; font-family: monospace; padding:20px; margin:0;}
+body { background:#0a0a0a; color:#00eaff; font-family:monospace; padding:20px; margin:0;}
 h1 { font-size:1.5em; text-align:center; margin-bottom:10px; }
-input, textarea, button { font-family: monospace; font-size:1em; margin-top:10px; color:#00eaff; }
+input, textarea, button { font-family:monospace; font-size:1em; margin-top:10px; color:#00eaff; }
 input, textarea { background:#111; border:1px solid #00eaff; padding:10px; width:100%; box-sizing:border-box; }
 textarea { height:150px; resize:none; }
 button { background:#00eaff; color:#000; border:none; padding:10px; cursor:pointer; font-weight:bold; width:100%; box-sizing:border-box; }
@@ -58,13 +58,21 @@ document.getElementById("createBtn").addEventListener("click", async()=>{
             headers:{'Content-Type':'application/json'},
             body: JSON.stringify({code,password})
         });
-        const data = await res.json();
+
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); }
+        catch(err){
+            console.error('Server returned non-JSON:', text);
+            return alert('Server error: check console');
+        }
+
         if(data.error) return alert(data.error);
 
         document.getElementById("rawLink").value = data.link;
         document.getElementById("loadstringLink").value = data.loadstring;
     } catch(e){
-        alert("Failed to create RAW. Check server logs.");
+        alert("Failed to create RAW. Check console.");
         console.error(e);
     }
 });
