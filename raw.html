@@ -2,50 +2,85 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mon Raw Viewer</title>
+<title>Mon Lua Protector - RAW</title>
 <style>
-body { background: #0a0a0a; font-family: Consolas, monospace; color: #00eaff; padding: 20px; }
-h1 { text-shadow: 0 0 5px #00eaff; }
-input { width: 100%; padding: 10px; background: #000; color: #00eaff; border: 1px solid #00eaff; border-radius: 8px; margin-top: 8px; font-family: Consolas, monospace; }
-button { margin-top: 12px; width: 100%; padding: 12px; background: #00eaff; border: none; border-radius: 8px; color: #000; font-weight: bold; cursor: pointer; }
-pre { display: none; margin-top: 15px; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #00eaff; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
+    body {
+        background: #0a0a0a;
+        color: #00eaff;
+        font-family: Consolas, monospace;
+        text-align: center;
+        padding: 20px;
+    }
+    input {
+        background: #111;
+        border: 1px solid #00eaff;
+        padding: 10px;
+        width: 300px;
+        color: #00eaff;
+        margin-top: 10px;
+    }
+    button {
+        background: #00eaff;
+        border: none;
+        padding: 10px 20px;
+        color: #000;
+        cursor: pointer;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+    #codeBox {
+        white-space: pre-wrap;
+        background: #111;
+        padding: 20px;
+        margin-top: 20px;
+        border: 1px solid #00eaff;
+        display: none;
+    }
 </style>
 </head>
 <body>
 
 <h1>THIS FILE WAS PROTECT WITH MON LUA PROTECTOR</h1>
-<p>IF YOU ARE THE OWNER PLEASE TYPE THE FILE PASSWORDS</p>
+<p>IF YOU ARE THE OWNER PLEASE TYPE THE FILE PASSWORD</p>
 
-<input type="text" id="passwordBox" placeholder="Enter password">
-<button onclick="viewRaw()">View RAW</button>
+<input type="password" id="pass">
+<button onclick="unlock()">Unlock</button>
 
-<pre id="codeBox"></pre>
+<div id="codeBox"></div>
 
 <script>
-// Đọc toàn bộ RAW từ localStorage
-const db = JSON.parse(localStorage.getItem("MonRawDB") || "{}");
-
-// Lấy RAW ID từ URL
-function getParam(name) {
-    const params = new URLSearchParams(window.location.search);
-    return params.get(name);
+function decrypt(enc, pass) {
+    try {
+        let decoded = decodeURIComponent(escape(atob(enc)));
+        let parts = decoded.split("::");
+        if (parts[1] === pass) return parts[0];
+    } catch {
+        return null;
+    }
+    return null;
 }
 
-// Xem RAW
-function viewRaw() {
-    const pwd = document.getElementById("passwordBox").value.trim();
-    if (!pwd) return alert("Password required!");
+async function unlock() {
+    const pass = document.getElementById("pass").value;
+    const url = new URL(location.href);
+    const id = url.searchParams.get("id");
 
-    const id = getParam("id");
-    if (!id) return alert("RAW ID required in URL (?id=RAWID)");
+    // load DB (from localStorage hoặc từ raw-db.json trên GitHub)
+    let db = localStorage.getItem("mon_raw_db");
 
-    if (!db[id]) return alert("RAW not found");
-    if (db[id].password !== pwd) return alert("Wrong password!");
+    if (!db) db = await fetch("raw-db.json").then(r => r.json());
+    else db = JSON.parse(db);
 
-    const codeBox = document.getElementById("codeBox");
-    codeBox.textContent = db[id].code;
-    codeBox.style.display = "block";
+    let raw = db.raws.find(r => r.id === id);
+
+    if (!raw) return alert("RAW not found");
+
+    let code = decrypt(raw.encrypted, pass);
+
+    if (!code) return alert("Wrong password");
+
+    document.getElementById("codeBox").style.display = "block";
+    document.getElementById("codeBox").textContent = code;
 }
 </script>
 
