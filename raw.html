@@ -2,41 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Mon Lua Protector - RAW Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Lua Protector - RAW</title>
 <style>
-body {
-    background: #0a0a0a;
-    color: #00eaff;
-    font-family: monospace;
-    text-align: center;
-    padding: 20px;
-}
-input, textarea {
-    background: #111;
-    border: 1px solid #00eaff;
-    padding: 10px;
-    color: #00eaff;
-    margin-top: 10px;
-}
-input {
-    width: 300px;
-}
-textarea {
-    width: 90%;
-    height: 300px;
-    resize: none;
-    overflow: auto;
-    display: none;
-}
-button {
-    background: #00eaff;
-    border: none;
-    padding: 10px 20px;
-    color: #000;
-    cursor: pointer;
-    font-weight: bold;
-    margin: 5px;
-}
+body { background:#0a0a0a; color:#00eaff; font-family:monospace; text-align:center; padding:20px; margin:0; }
+input, textarea, button { margin-top:10px; font-family:monospace; font-size:1em; color:#00eaff; }
+input, textarea { background:#111; border:1px solid #00eaff; padding:10px; width:90%; box-sizing:border-box; }
+textarea { height:250px; resize:none; display:none; overflow:auto; }
+button { background:#00eaff; border:none; padding:10px; color:#000; cursor:pointer; font-weight:bold; }
+@media (max-width:600px){ textarea { height:150px; } }
 </style>
 </head>
 <body>
@@ -46,10 +20,9 @@ button {
 
 <input type="password" id="pass" placeholder="Enter password">
 <button onclick="unlock()">Unlock</button>
-
 <br><br>
 
-<textarea id="codeBox" placeholder="Your code will appear here..."></textarea>
+<textarea id="codeBox"></textarea>
 <br>
 <input type="file" id="fileInput" style="display:none;">
 <button onclick="document.getElementById('fileInput').click()">Upload Code</button>
@@ -57,35 +30,31 @@ button {
 <button onclick="saveCode()">Save</button>
 
 <script>
-let db = null;
 let currentRaw = null;
 
-// Tải database JSON
+// Load DB
 async function loadDB(){
-    db = await fetch("/raw-db.json").then(r => r.json());
+    const db = await fetch('/raw-db.json').then(r=>r.json());
+    return db;
 }
 
-// Mở file raw (không mã hóa)
+// Unlock RAW
 async function unlock(){
-    if(!db) await loadDB();
-    
+    const pass = document.getElementById("pass").value;
     const url = new URL(location.href);
     const id = url.searchParams.get("id");
-    const pass = document.getElementById("pass").value;
+    const db = await loadDB();
+    const raw = db.raws.find(r=>r.id===id);
+    if(!raw) return alert("RAW not found");
+    if(raw.password!==pass) return alert("Wrong password");
 
-    currentRaw = db.raws.find(r => r.id === id);
-    if(!currentRaw) return alert("RAW not found");
-
-    if(currentRaw.password !== pass){
-        return alert("Wrong password!");
-    }
-
-    const box = document.getElementById("codeBox");
-    box.style.display = "block";
-    box.value = currentRaw.code;
+    currentRaw = raw;
+    const textarea = document.getElementById("codeBox");
+    textarea.style.display='block';
+    textarea.value = raw.code;
 }
 
-// Upload file → load text vào textarea
+// Upload code
 document.getElementById("fileInput").addEventListener("change", async(e)=>{
     const file = e.target.files[0];
     if(file){
@@ -96,30 +65,27 @@ document.getElementById("fileInput").addEventListener("change", async(e)=>{
 
 // Clear code
 function clearCode(){
-    document.getElementById("codeBox").value = "";
+    document.getElementById("codeBox").value = '';
 }
 
-// Save code → gọi API để cập nhật JSON
+// Save code
 async function saveCode(){
     if(!currentRaw) return alert("Unlock first.");
     const newCode = document.getElementById("codeBox").value;
     const pass = document.getElementById("pass").value;
 
-    const res = await fetch("/api/update-raw", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            id: currentRaw.id,
-            password: pass,
-            code: newCode
-        })
-    });
-
-    const data = await res.json();
-    if(data.error){
-        alert(data.error);
-    } else {
-        alert("Saved!");
+    try{
+        const res = await fetch('/api/update-raw', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({id: currentRaw.id, password:pass, code:newCode})
+        });
+        const data = await res.json();
+        if(data.error) return alert(data.error);
+        alert("Saved successfully");
+    } catch(e){
+        alert("Failed to save RAW. Check server logs.");
+        console.error(e);
     }
 }
 </script>
