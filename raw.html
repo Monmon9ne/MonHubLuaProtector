@@ -2,12 +2,41 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Mon Lua Protector - RAW</title>
+<title>Mon Lua Protector - RAW Viewer</title>
 <style>
-body { background: #0a0a0a; color: #00eaff; font-family: monospace; text-align:center; padding:20px;}
-input { background:#111; border:1px solid #00eaff; padding:10px; width:300px; color:#00eaff; margin-top:10px;}
-button { background:#00eaff; border:none; padding:10px 20px; color:#000; cursor:pointer; font-weight:bold; margin-top:10px;}
-#codeBox { white-space: pre-wrap; background:#111; padding:20px; margin-top:20px; border:1px solid #00eaff; display:none;}
+body {
+    background: #0a0a0a;
+    color: #00eaff;
+    font-family: monospace;
+    text-align: center;
+    padding: 20px;
+}
+input, textarea {
+    background: #111;
+    border: 1px solid #00eaff;
+    padding: 10px;
+    color: #00eaff;
+    margin-top: 10px;
+}
+input {
+    width: 300px;
+}
+textarea {
+    width: 90%;
+    height: 300px;
+    resize: none;
+    overflow: auto;
+    display: none;
+}
+button {
+    background: #00eaff;
+    border: none;
+    padding: 10px 20px;
+    color: #000;
+    cursor: pointer;
+    font-weight: bold;
+    margin: 5px;
+}
 </style>
 </head>
 <body>
@@ -15,30 +44,82 @@ button { background:#00eaff; border:none; padding:10px 20px; color:#000; cursor:
 <h1>THIS FILE WAS PROTECT WITH MON LUA PROTECTOR</h1>
 <p>IF YOU ARE THE OWNER PLEASE TYPE THE FILE PASSWORD</p>
 
-<input type="password" id="pass">
+<input type="password" id="pass" placeholder="Enter password">
 <button onclick="unlock()">Unlock</button>
 
-<div id="codeBox"></div>
+<br><br>
+
+<textarea id="codeBox" placeholder="Your code will appear here..."></textarea>
+<br>
+<input type="file" id="fileInput" style="display:none;">
+<button onclick="document.getElementById('fileInput').click()">Upload Code</button>
+<button onclick="clearCode()">Clear</button>
+<button onclick="saveCode()">Save</button>
 
 <script>
-async function unlock() {
-    const pass = document.getElementById("pass").value;
+let db = null;
+let currentRaw = null;
+
+// Tải database JSON
+async function loadDB(){
+    db = await fetch("/raw-db.json").then(r => r.json());
+}
+
+// Mở file raw (không mã hóa)
+async function unlock(){
+    if(!db) await loadDB();
+    
     const url = new URL(location.href);
     const id = url.searchParams.get("id");
+    const pass = document.getElementById("pass").value;
 
-    const db = await fetch('/raw-db.json').then(r => r.json());
-    const raw = db.raws.find(r => r.id===id);
-    if(!raw) return alert("RAW not found");
+    currentRaw = db.raws.find(r => r.id === id);
+    if(!currentRaw) return alert("RAW not found");
 
-    try {
-        const decoded = atob(raw.encrypted);
-        const parts = decoded.split("::");
-        if(parts[1]!==pass) return alert("Wrong password");
+    if(currentRaw.password !== pass){
+        return alert("Wrong password!");
+    }
 
-        document.getElementById("codeBox").style.display='block';
-        document.getElementById("codeBox").textContent = parts[0];
-    } catch(e) {
-        alert("Failed to decrypt");
+    const box = document.getElementById("codeBox");
+    box.style.display = "block";
+    box.value = currentRaw.code;
+}
+
+// Upload file → load text vào textarea
+document.getElementById("fileInput").addEventListener("change", async(e)=>{
+    const file = e.target.files[0];
+    if(file){
+        const text = await file.text();
+        document.getElementById("codeBox").value = text;
+    }
+});
+
+// Clear code
+function clearCode(){
+    document.getElementById("codeBox").value = "";
+}
+
+// Save code → gọi API để cập nhật JSON
+async function saveCode(){
+    if(!currentRaw) return alert("Unlock first.");
+    const newCode = document.getElementById("codeBox").value;
+    const pass = document.getElementById("pass").value;
+
+    const res = await fetch("/api/update-raw", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            id: currentRaw.id,
+            password: pass,
+            code: newCode
+        })
+    });
+
+    const data = await res.json();
+    if(data.error){
+        alert(data.error);
+    } else {
+        alert("Saved!");
     }
 }
 </script>
