@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Raw Creator</title>
+<style>
+body { background: #0a0a0a; font-family: Consolas, monospace; color: #00eaff; padding: 20px; }
+h1 { text-shadow: 0 0 5px #00eaff; }
+.box { background: #111; border: 1px solid #00eaff; border-radius: 10px; padding: 15px; margin-top: 15px; }
+textarea, input { width: 100%; padding: 10px; background: #000; color: #00eaff; border: 1px solid #00eaff; border-radius: 8px; margin-top: 8px; font-family: Consolas, monospace; }
+button { margin-top: 12px; width: 100%; padding: 12px; background: #00eaff; border: none; border-radius: 8px; color: #000; font-weight: bold; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>Mon Lua Protector - RAW Creator</h1>
+
+<div class="box">
+    <label>Upload File:</label>
+    <input type="file" id="fileInput" />
+</div>
+
+<div class="box">
+    <label>Or Paste Code:</label>
+    <textarea id="codeBox" rows="10" placeholder="Paste Lua code..."></textarea>
+</div>
+
+<div class="box">
+    <label>Password:</label>
+    <input type="text" id="passwordBox" placeholder="Enter password" />
+</div>
+
+<button onclick="saveRaw()">Create RAW</button>
+
+<script>
+const storageKey = "MonRawDB";
+
+document.getElementById("fileInput").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    document.getElementById("codeBox").value = text;
+});
+
+function saveRaw() {
+    const code = document.getElementById("codeBox").value;
+    const pwd = document.getElementById("passwordBox").value;
+    if (!code) return alert("Code required!");
+    if (!pwd) return alert("Password required!");
+
+    const db = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    const id = Date.now().toString();
+    db[id] = { code, password: pwd };
+    localStorage.setItem(storageKey, JSON.stringify(db));
+
+    alert(`Saved! RAW ID: ${id}\nUpload JSON to GitHub for Vercel.`);
+    console.log("RAW ID:", id);
+}
+</script>
+</body>
+</html>
